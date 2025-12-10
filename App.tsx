@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useRef } from 'react';
 import Tableau from './components/Tableau';
 import { ProblemState, SolverState, LogEntry } from './types';
@@ -331,6 +330,11 @@ const App: React.FC = () => {
   };
 
   const askAI = async () => {
+    if (!customKey) {
+      alert("请先输入 API Key 才能使用 AI 助教功能。");
+      return;
+    }
+
     setLoadingAi(true);
     const tip = await getAIExplanation(solver, solver.stepDescription, selectedModel, customKey);
     setAiTip(tip);
@@ -634,7 +638,7 @@ const App: React.FC = () => {
                       </label>
                       <input 
                         type="password" 
-                        placeholder={selectedModel.includes('deepseek') ? "sk-..." : "Gemini API Key..."}
+                        placeholder={selectedModel.includes('deepseek') ? "请输入 DeepSeek Key..." : "请输入 Gemini Key..."}
                         className="w-full px-3 py-2 bg-white/10 border border-white/20 rounded-lg text-xs text-white placeholder:text-indigo-300 focus:outline-none focus:ring-2 focus:ring-white/30"
                         value={customKey}
                         onChange={(e) => setCustomKey(e.target.value)}
