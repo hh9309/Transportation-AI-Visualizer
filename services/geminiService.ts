@@ -1,9 +1,8 @@
-
 import { GoogleGenAI } from "@google/genai";
 import { SolverState } from "../types";
 
-// Default instance
-let ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+// Removed global instance to avoid 'process is not defined' error in browser/Netlify deployments
+// let ai = new GoogleGenAI({ apiKey: process.env.API_KEY }); 
 
 export const getAIExplanation = async (
   state: SolverState,
@@ -12,17 +11,13 @@ export const getAIExplanation = async (
   apiKey?: string
 ): Promise<string> => {
   
-  // If a custom key is provided (e.g. for DeepSeek simulation or user's own key), 
-  // re-instantiate or use it. For this demo, we use Gemini for all to ensure stability,
-  // but if the user provided a key, we try to use it with the Gemini SDK.
-  let activeModel = 'gemini-2.5-flash';
-  
-  if (apiKey) {
-      ai = new GoogleGenAI({ apiKey });
-  } else {
-      // Revert to default if no key passed
-      ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+  // Ensure we have a key before proceeding
+  if (!apiKey) {
+      return "请在右侧设置中输入 API Key 以使用 AI 智能助教功能。";
   }
+
+  // Instantiate the client dynamically with the user-provided key
+  const ai = new GoogleGenAI({ apiKey });
 
   // Simplify the grid for the prompt to save tokens
   const gridSummary = state.grid.map(row => 
@@ -31,7 +26,7 @@ export const getAIExplanation = async (
 
   const prompt = `
     你是一位运筹学（Operations Research）专家和助教。
-    用户正在使用“表上作业法”解决运输问题。
+    用户正在使用“Transportation AI Visualizer”求解运输问题。
     
     当前步骤说明: ${context}
     当前状态: ${state.status}
@@ -50,12 +45,12 @@ export const getAIExplanation = async (
 
   try {
     const response = await ai.models.generateContent({
-      model: activeModel,
+      model: modelId, // Use the passed model ID (e.g. gemini-2.5-flash)
       contents: prompt,
     });
     return response.text || "无法生成解释。";
   } catch (error) {
     console.error("AI Error:", error);
-    return "AI 助教暂时无法连接（请检查 API Key）。";
+    return "AI 助教连接失败。请检查您的 API Key 是否正确，或者该 Key 是否有权限访问所选模型。";
   }
 };
