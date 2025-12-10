@@ -1,0 +1,5 @@
+{
+  "name": "OptiTrans: AI Transportation Solver",
+  "description": "An interactive Operations Research visualization tool for the Transportation Problem. Features step-by-step solving using Least Cost/Northwest Corner methods and MODI optimization, with AI-powered explanations.",
+  "requestFramePermissions": []
+}
