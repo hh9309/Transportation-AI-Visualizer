@@ -4,7 +4,7 @@ import { ProblemState, SolverState, LogEntry } from './types';
 import { solveLeastCost, calculatePotentials, calculateOpportunityCosts, findLoop, applyPivot, generateRandomProblem, createEmptyGrid, calculateTotalCost } from './utils/solver';
 import { getAIExplanation } from './services/geminiService';
 import { Play, RotateCcw, Brain, CheckCircle, ArrowRight, Settings, Activity, List, Calculator, Cpu, ChevronRight, Key, Plus, Minus, FastForward, Zap } from 'lucide-react';
-import { clsx } from 'clsx';
+import clsx from 'clsx';
 
 const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
 
@@ -29,8 +29,6 @@ const App: React.FC = () => {
   const [history, setHistory] = useState<LogEntry[]>([]);
   const [aiTip, setAiTip] = useState<string>("");
   const [loadingAi, setLoadingAi] = useState(false);
-  const [selectedModel, setSelectedModel] = useState<string>('gemini-2.5-flash');
-  const [customKey, setCustomKey] = useState("");
   const [isAutoSolving, setIsAutoSolving] = useState(false);
 
   const chatContainerRef = useRef<HTMLDivElement>(null);
@@ -330,13 +328,8 @@ const App: React.FC = () => {
   };
 
   const askAI = async () => {
-    if (!customKey) {
-      alert("请先输入 API Key 才能使用 AI 助教功能。");
-      return;
-    }
-
     setLoadingAi(true);
-    const tip = await getAIExplanation(solver, solver.stepDescription, selectedModel, customKey);
+    const tip = await getAIExplanation(solver, solver.stepDescription);
     setAiTip(tip);
     setLoadingAi(false);
   };
@@ -610,39 +603,15 @@ const App: React.FC = () => {
                     <div className="px-2 py-0.5 bg-white/20 rounded-full text-[10px] font-medium border border-white/10 backdrop-blur-sm">Live</div>
                  </div>
                  
-                 {/* Model Selector */}
                  <div className="space-y-3">
+                   {/* Model Info Display */}
                    <div>
                      <label className="text-[10px] uppercase font-bold text-indigo-200 mb-1 flex items-center gap-1">
-                       <Cpu className="w-3 h-3" /> 模型选择
+                       <Cpu className="w-3 h-3" /> 模型
                      </label>
-                     <div className="relative group">
-                       <select 
-                         value={selectedModel}
-                         onChange={(e) => {
-                           setSelectedModel(e.target.value);
-                         }}
-                         className="w-full pl-3 pr-8 py-2 bg-white/10 border border-white/20 rounded-lg text-sm text-white focus:outline-none focus:ring-2 focus:ring-white/30 appearance-none cursor-pointer hover:bg-white/20 transition-colors"
-                       >
-                          <option value="gemini-2.5-flash" className="text-slate-900">Google Gemini 2.5 Flash</option>
-                          <option value="deepseek-chat" className="text-slate-900">DeepSeek (Custom Key)</option>
-                       </select>
-                       <ChevronRight className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-white/50 rotate-90 pointer-events-none" />
+                     <div className="text-sm font-medium text-white/90">
+                       Google Gemini 2.5 Flash
                      </div>
-                   </div>
-
-                   {/* API Key Input (Always Shown now) */}
-                   <div className="animate-in fade-in slide-in-from-top-2">
-                      <label className="text-[10px] uppercase font-bold text-indigo-200 mb-1 flex items-center gap-1">
-                        <Key className="w-3 h-3" /> API Key
-                      </label>
-                      <input 
-                        type="password" 
-                        placeholder={selectedModel.includes('deepseek') ? "请输入 DeepSeek Key..." : "请输入 Gemini Key..."}
-                        className="w-full px-3 py-2 bg-white/10 border border-white/20 rounded-lg text-xs text-white placeholder:text-indigo-300 focus:outline-none focus:ring-2 focus:ring-white/30"
-                        value={customKey}
-                        onChange={(e) => setCustomKey(e.target.value)}
-                      />
                    </div>
                  </div>
               </div>
@@ -652,7 +621,7 @@ const App: React.FC = () => {
                   {!aiTip && (
                     <div className="flex flex-col items-center justify-center h-40 text-center opacity-60">
                        <Brain className="w-8 h-8 text-indigo-300 mb-2" />
-                       <p className="text-xs text-slate-500 max-w-[200px]">点击下方按钮，让 {selectedModel.split('-')[0]} 解释当前步骤的数学逻辑。</p>
+                       <p className="text-xs text-slate-500 max-w-[200px]">点击下方按钮，让 Gemini 2.5 Flash 解释当前步骤的数学逻辑。</p>
                     </div>
                   )}
                   

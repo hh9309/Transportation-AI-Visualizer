@@ -1,6 +1,6 @@
 import React from 'react';
 import { Cell, SolverState } from '../types';
-import { clsx } from 'clsx';
+import clsx from 'clsx';
 import { ArrowRight, CornerDownRight } from 'lucide-react';
 
 interface TableauProps {
