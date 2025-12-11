@@ -16,9 +16,6 @@ export const getAIExplanation = async (
       return "请在右侧设置中输入 API Key 以使用 AI 智能助教功能。";
   }
 
-  // Instantiate the client dynamically with the user-provided key
-  const ai = new GoogleGenAI({ apiKey });
-
   // Simplify the grid for the prompt to save tokens
   const gridSummary = state.grid.map(row => 
     row.map(c => `(${c.row},${c.col}): C=${c.cost}, Alloc=${c.allocation ?? 0}, Basic=${c.isBasin}, Delta=${c.opportunityCost ?? 'N/A'}`).join(' | ')
@@ -42,6 +39,45 @@ export const getAIExplanation = async (
     - 如果是寻找闭回路，请解释闭回路的意义。
     - 不要使用Markdown格式（如**加粗**），仅使用纯文本。
   `;
+
+  // Handle DeepSeek models via fetch since SDK is for Google GenAI
+  if (modelId.includes('deepseek')) {
+    try {
+      // Using standard DeepSeek endpoint structure with the requested v1 base
+      // User requested URL: https://api.deepseek.com/v1
+      const response = await fetch("https://api.deepseek.com/v1/chat/completions", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${apiKey}`
+        },
+        body: JSON.stringify({
+          model: "deepseek-chat", // DeepSeek V3 is 'deepseek-chat'
+          messages: [
+            { role: "system", content: "You are a helpful Operations Research assistant." },
+            { role: "user", content: prompt }
+          ],
+          stream: false
+        })
+      });
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(`DeepSeek API returned ${response.status}: ${errorText}`);
+      }
+
+      const data = await response.json();
+      return data.choices?.[0]?.message?.content || "AI 未返回解释。";
+
+    } catch (error) {
+      console.error("DeepSeek Error:", error);
+      return `DeepSeek 连接失败: ${error instanceof Error ? error.message : "未知错误"}`;
+    }
+  }
+
+  // Fallback to Google Gemini
+  // Instantiate the client dynamically with the user-provided key
+  const ai = new GoogleGenAI({ apiKey });
 
   try {
     const response = await ai.models.generateContent({

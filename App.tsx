@@ -625,7 +625,7 @@ const App: React.FC = () => {
                          className="w-full pl-3 pr-8 py-2 bg-white/10 border border-white/20 rounded-lg text-sm text-white focus:outline-none focus:ring-2 focus:ring-white/30 appearance-none cursor-pointer hover:bg-white/20 transition-colors"
                        >
                           <option value="gemini-2.5-flash" className="text-slate-900">Google Gemini 2.5 Flash</option>
-                          <option value="deepseek-v3" className="text-slate-900">DeepSeek V3 (Custom Key)</option>
+                          <option value="deepseek-chat" className="text-slate-900">DeepSeek (Custom Key)</option>
                        </select>
                        <ChevronRight className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-white/50 rotate-90 pointer-events-none" />
                      </div>
