@@ -640,7 +640,7 @@ const App: React.FC = () => {
               <div className="p-4 bg-white border-t border-slate-200">
                  <button 
                    onClick={askAI}
-                   disabled={loadingAi || solver.status === 'input'}
+                   disabled={loadingAi || (solver.status as string) === 'input'}
                    className="w-full py-3 bg-slate-900 hover:bg-indigo-900 text-white rounded-xl text-sm font-semibold transition-all flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed shadow-lg shadow-slate-200 active:scale-95"
                  >
                    <Brain className="w-4 h-4" /> 解释当前步骤

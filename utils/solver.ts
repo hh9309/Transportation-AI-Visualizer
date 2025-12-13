@@ -266,19 +266,23 @@ export const applyPivot = (grid: Cell[][], loop: LoopNode[]): { newGrid: Cell[][
       }
   }
 
-  // Deep copy grid
-  const newGrid = grid.map(row => row.map(c => ({...c, allocation: c.allocation ?? 0})));
+  // Deep copy grid with explicit type to ensure allocation can be nullable later
+  const newGrid: Cell[][] = grid.map(row => row.map(c => ({...c, allocation: c.allocation ?? 0})));
 
   // Apply theta
   for (let i = 0; i < loop.length - 1; i++) { 
       const node = loop[i];
       if (i % 2 === 0) {
           // Plus
-          newGrid[node.r][node.c].allocation! += theta;
+          if (newGrid[node.r][node.c].allocation !== null) {
+              newGrid[node.r][node.c].allocation! += theta;
+          }
           newGrid[node.r][node.c].isBasin = true;
       } else {
           // Minus
-          newGrid[node.r][node.c].allocation! -= theta;
+          if (newGrid[node.r][node.c].allocation !== null) {
+              newGrid[node.r][node.c].allocation! -= theta;
+          }
       }
   }
 
