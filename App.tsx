@@ -438,7 +438,7 @@ const App: React.FC = () => {
                               </button>
 
                               {/* Iteration Shortcuts */}
-                              {(solver.status === 'ready' || solver.status === 'input') && (
+                              {solver.status === 'ready' && (
                                 <div className="grid grid-cols-2 gap-2 mt-1">
                                     <button 
                                       onClick={handleNextIteration}
