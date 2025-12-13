@@ -1,8 +1,10 @@
-/// <reference types="vite/client" />
+export {};
 
-declare namespace NodeJS {
-  interface ProcessEnv {
-    readonly API_KEY: string;
-    [key: string]: string | undefined;
+declare global {
+  namespace NodeJS {
+    interface ProcessEnv {
+      API_KEY: string | undefined;
+      [key: string]: string | undefined;
+    }
   }
 }
