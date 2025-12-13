@@ -8,7 +8,6 @@ export const getAIExplanation = async (
 ): Promise<string> => {
   
   // The API key must be obtained exclusively from the environment variable process.env.API_KEY.
-  // We use a safe access pattern here, though vite.config.ts handles the polyfill.
   const apiKey = process.env.API_KEY;
 
   if (!apiKey) {
