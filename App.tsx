@@ -31,6 +31,7 @@ const App: React.FC = () => {
   const [loadingAi, setLoadingAi] = useState(false);
   const [isAutoSolving, setIsAutoSolving] = useState(false);
 
+  // Use correct type for div reference to fix TS7006/TS2769 errors
   const chatContainerRef = useRef<HTMLDivElement>(null);
 
   // Auto scroll chat
