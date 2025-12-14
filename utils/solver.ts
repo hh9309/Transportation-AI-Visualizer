@@ -266,8 +266,8 @@ export const applyPivot = (grid: Cell[][], loop: LoopNode[]): { newGrid: Cell[][
       }
   }
 
-  // Deep copy grid
-  const newGrid = grid.map(row => row.map(c => ({...c, allocation: c.allocation ?? 0})));
+  // Deep copy grid with explicit type to allow null assignment later
+  const newGrid: Cell[][] = grid.map(row => row.map(c => ({...c, allocation: c.allocation ?? 0})));
 
   // Apply theta
   for (let i = 0; i < loop.length - 1; i++) { 

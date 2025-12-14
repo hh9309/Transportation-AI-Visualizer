@@ -3,7 +3,7 @@ import Tableau from './components/Tableau';
 import { ProblemState, SolverState, LogEntry } from './types';
 import { solveLeastCost, calculatePotentials, calculateOpportunityCosts, findLoop, applyPivot, generateRandomProblem, createEmptyGrid, calculateTotalCost } from './utils/solver';
 import { sendMessageToAI, AIProvider, ChatMessage } from './services/geminiService';
-import { Play, RotateCcw, Brain, CheckCircle, ArrowRight, Settings, Activity, List, Calculator, Minus, Plus, FastForward, Zap, Send, MessageSquare, Bot, X, Key, AlertCircle } from 'lucide-react';
+import { Play, RotateCcw, Brain, CheckCircle, ArrowRight, Settings, Activity, List, Calculator, Minus, Plus, FastForward, Zap, Send, MessageSquare, Bot, X, Key, AlertCircle, Sigma, Route } from 'lucide-react';
 import clsx from 'clsx';
 
 const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
@@ -288,7 +288,7 @@ const App: React.FC = () => {
                         {solver.status !== 'optimal' && !isAutoSolving && (
                           <>
                              <button onClick={handleNextStep} className="w-full py-3 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-bold flex items-center justify-center gap-2"><ArrowRight className="w-5 h-5" /> 下一步 (Step)</button>
-                             {(solver.status === 'ready' || solver.status === 'input') && (
+                             {solver.status === 'ready' && (
                                 <div className="grid grid-cols-2 gap-2 mt-1">
                                     <button onClick={handleNextIteration} className="py-2 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200 rounded-lg font-bold text-xs flex items-center justify-center gap-1 disabled:opacity-50"><Zap className="w-3 h-3" /> 下一轮</button>
                                     <button onClick={handleAutoSolve} className="py-2 bg-slate-800 hover:bg-slate-900 text-white rounded-lg font-bold text-xs flex items-center justify-center gap-1"><FastForward className="w-3 h-3" /> 自动</button>
@@ -323,13 +323,82 @@ const App: React.FC = () => {
 
         {/* CENTER: Tableau */}
         <div className="col-span-12 lg:col-span-6 flex flex-col gap-4">
+           {/* Status Card */}
            <div className="bg-white border-l-4 border-indigo-500 rounded-r-xl shadow-sm p-4 flex items-start gap-4 min-h-[100px]">
               <div className={clsx("p-2 rounded-lg shrink-0", solver.status === 'optimal' ? "bg-green-100 text-green-600" : "bg-indigo-50 text-indigo-600")}>{solver.status === 'optimal' ? <CheckCircle className="w-6 h-6" /> : <Activity className="w-6 h-6" />}</div>
               <div className="flex-1"><div className="flex justify-between items-start"><h3 className="font-bold text-slate-800 text-lg mb-1">{solver.message}</h3></div><p className="text-slate-600 leading-relaxed text-sm">{solver.stepDescription}</p></div>
            </div>
+
+           {/* Tableau Grid */}
            <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-1 overflow-hidden min-h-[500px] flex flex-col">
               <div className="p-4 border-b border-slate-100 flex justify-between items-center bg-slate-50/50"><h3 className="font-bold text-slate-700 flex items-center gap-2">运输表</h3><div className="flex gap-4 text-xs"><div className="flex items-center gap-1.5"><div className="w-2.5 h-2.5 rounded-sm bg-indigo-100 border border-indigo-300"></div> 基变量</div><div className="flex items-center gap-1.5"><div className="w-2.5 h-2.5 rounded-sm bg-green-100 border border-green-300"></div> 调入</div><div className="flex items-center gap-1.5"><div className="w-2.5 h-2.5 rounded-sm bg-red-100 border border-red-300"></div> 调出</div></div></div>
               <div className="p-4 flex-1 flex items-center justify-center bg-slate-50/30 overflow-auto">{!problem ? <div className="text-center text-slate-400"><Calculator className="w-16 h-16 mx-auto mb-4 opacity-20" /><p>请在左侧配置并生成问题</p></div> : <Tableau solverState={solver} problem={problem} />}</div>
+           </div>
+
+           {/* NEW SECTIONS: Formula & Algorithm Hints */}
+           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {/* Formula Section */}
+              <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-5 flex flex-col justify-between group hover:border-indigo-200 transition-colors">
+                  <div>
+                      <h4 className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-4 flex items-center gap-2">
+                          <Calculator className="w-4 h-4" /> 当前计算公式
+                      </h4>
+                      <div className="relative overflow-hidden rounded-xl bg-slate-900 p-4 shadow-inner">
+                         <div className="absolute right-0 top-0 opacity-10 transform translate-x-1/4 -translate-y-1/4">
+                            <Sigma className="w-24 h-24 text-white" />
+                         </div>
+                         <div className="relative z-10">
+                            <div className="font-mono text-xs text-slate-400 mb-1">Objective Function</div>
+                            <div className="font-mono text-lg font-medium text-white tracking-tight">
+                                Total Cost = Σ (x<sub>ij</sub> × c<sub>ij</sub>)
+                            </div>
+                         </div>
+                      </div>
+                  </div>
+                  <div className="mt-4 flex justify-between items-end">
+                      <span className="text-xs text-slate-500 font-bold bg-slate-100 px-2 py-1 rounded-md">Min Z</span>
+                      <div className="text-right">
+                          <span className="block text-[10px] text-slate-400 mb-0.5">当前总运费</span>
+                          <span className="text-xl font-mono font-bold text-indigo-600">¥ {solver.totalCost}</span>
+                      </div>
+                  </div>
+              </div>
+
+              {/* Algorithm Hint Section */}
+              <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-5 flex flex-col group hover:border-indigo-200 transition-colors">
+                  <h4 className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-4 flex items-center gap-2">
+                      <Route className="w-4 h-4" /> 算法提示
+                  </h4>
+                  
+                  <div className="flex-1 flex flex-col justify-center">
+                    <div className="relative space-y-6 pl-4">
+                        {/* Connecting Line */}
+                        <div className="absolute left-[19px] top-2 bottom-2 w-0.5 bg-slate-100"></div>
+
+                        {/* Steps */}
+                        <div className="relative flex items-center gap-3">
+                           <div className={clsx("w-2.5 h-2.5 rounded-full z-10 outline outline-4 outline-white", ['potentials', 'ready', 'input'].includes(solver.status) ? "bg-indigo-500" : "bg-slate-300")}></div>
+                           <div className={clsx("text-xs font-medium transition-colors", ['potentials', 'ready', 'input'].includes(solver.status) ? "text-slate-800" : "text-slate-400")}>
+                               每次迭代：先算位势 u, v
+                           </div>
+                        </div>
+
+                        <div className="relative flex items-center gap-3">
+                           <div className={clsx("w-2.5 h-2.5 rounded-full z-10 outline outline-4 outline-white", ['deltas'].includes(solver.status) ? "bg-indigo-500 animate-pulse" : ['loop', 'optimal'].includes(solver.status) ? "bg-indigo-500" : "bg-slate-300")}></div>
+                           <div className={clsx("text-xs font-medium transition-colors", ['deltas'].includes(solver.status) ? "text-indigo-600 font-bold" : ['loop', 'optimal'].includes(solver.status) ? "text-slate-800" : "text-slate-400")}>
+                               → 算空格检验数 Δ
+                           </div>
+                        </div>
+
+                        <div className="relative flex items-center gap-3">
+                           <div className={clsx("w-2.5 h-2.5 rounded-full z-10 outline outline-4 outline-white", ['loop'].includes(solver.status) ? "bg-indigo-500 animate-pulse" : ['optimal'].includes(solver.status) ? "bg-indigo-500" : "bg-slate-300")}></div>
+                           <div className={clsx("text-xs font-medium transition-colors", ['loop'].includes(solver.status) ? "text-indigo-600 font-bold" : ['optimal'].includes(solver.status) ? "text-slate-800" : "text-slate-400")}>
+                               → 找最小负 Δ 进基 → 找闭回路
+                           </div>
+                        </div>
+                    </div>
+                  </div>
+              </div>
            </div>
         </div>
 
