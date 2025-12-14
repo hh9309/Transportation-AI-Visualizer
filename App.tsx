@@ -16,7 +16,8 @@ const App: React.FC = () => {
   const [showAiSettings, setShowAiSettings] = useState(false);
   const [aiProvider, setAiProvider] = useState<AIProvider>('gemini');
   // Store separate keys for each provider
-  const [apiKeys, setApiKeys] = useState<{ deepseek: string }>({
+  const [apiKeys, setApiKeys] = useState<{ gemini: string; deepseek: string }>({
+    gemini: '',
     deepseek: ''
   });
   
@@ -194,16 +195,18 @@ const App: React.FC = () => {
     const text = customText || userInput;
     if (!text.trim()) return;
 
-    // VALIDATION for DeepSeek ONLY
-    if (aiProvider === 'deepseek' && !apiKeys.deepseek) {
+    // VALIDATION: Check if the CURRENT provider has a key
+    const currentKey = apiKeys[aiProvider];
+    if (!currentKey) {
+        // Force open settings if key is missing
         setShowAiSettings(true);
+        // We can add a temporary system message to chat to guide them
         setChatMessages(prev => [...prev, { 
             role: 'model', 
-            content: `请先在设置中配置 DeepSeek 的 API Key。` 
+            content: `请先在设置中配置 ${aiProvider === 'gemini' ? 'Gemini' : 'DeepSeek'} 的 API Key，然后才能使用 AI 功能。` 
         }]);
         return;
     }
-    // For Gemini, we assume env variable is set and handled by the service.
 
     setLoadingAi(true);
     const newMsg: ChatMessage = { role: 'user', content: text };
@@ -212,8 +215,7 @@ const App: React.FC = () => {
     setUserInput('');
 
     try {
-      // Pass the specific key for DeepSeek, empty for Gemini
-      const currentKey = aiProvider === 'deepseek' ? apiKeys.deepseek : '';
+      // Pass the specific key for the active provider
       const response = await sendMessageToAI(aiProvider, currentKey, updatedHistory, problem ? solver : null);
       setChatMessages([...updatedHistory, { role: 'model', content: response }]);
     } catch (e: any) {
@@ -360,9 +362,9 @@ const App: React.FC = () => {
                       <div className="text-center py-10 opacity-50">
                           <MessageSquare className="w-10 h-10 mx-auto mb-2 text-slate-300" />
                           <p className="text-xs text-slate-500">
-                             你可以询问“解释当前步骤”或输入任何运筹学相关问题。
+                             请先在右上角 <Settings className="w-3 h-3 inline"/> 配置 API Key。
                              <br/>
-                             如使用 DeepSeek 请在设置中配置 Key。
+                             你可以询问“解释当前步骤”或输入任何运筹学相关问题。
                           </p>
                       </div>
                   )}
@@ -423,17 +425,23 @@ const App: React.FC = () => {
                     </div>
 
                     <div className="space-y-6">
-                        {/* API Keys Section */}
+                        {/* API Keys Section - ALWAYS VISIBLE */}
                         <div className="p-4 bg-slate-50 rounded-xl border border-slate-200 space-y-4">
-                            <h4 className="text-xs font-bold text-slate-500 uppercase flex items-center gap-2"><Key className="w-3 h-3"/> API Key 配置</h4>
+                            <h4 className="text-xs font-bold text-slate-500 uppercase flex items-center gap-2"><Key className="w-3 h-3"/> 1. 输入 API Key (必填)</h4>
                             
-                            {/* GEMINI KEY INPUT REMOVED - Environment Variable Only */}
-                            <div className="text-xs text-slate-500 bg-indigo-50 p-2 rounded border border-indigo-100">
-                                Gemini API Key 已通过环境变量配置。
+                            <div>
+                                <label className="block text-xs font-medium text-slate-600 mb-1.5">Gemini API Key</label>
+                                <input 
+                                    type="password" 
+                                    value={apiKeys.gemini}
+                                    onChange={(e) => setApiKeys(prev => ({...prev, gemini: e.target.value}))}
+                                    placeholder="AIzaSy..."
+                                    className="w-full p-2.5 bg-white border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 outline-none font-mono"
+                                />
                             </div>
 
                             <div>
-                                <label className="block text-xs font-medium text-slate-600 mb-1.5">DeepSeek API Key (可选)</label>
+                                <label className="block text-xs font-medium text-slate-600 mb-1.5">DeepSeek API Key</label>
                                 <input 
                                     type="password" 
                                     value={apiKeys.deepseek}
@@ -446,18 +454,21 @@ const App: React.FC = () => {
 
                         {/* Model Selection Section */}
                         <div>
-                            <h4 className="text-xs font-bold text-slate-500 uppercase mb-3 flex items-center gap-2"><Brain className="w-3 h-3"/> 选择模型</h4>
+                            <h4 className="text-xs font-bold text-slate-500 uppercase mb-3 flex items-center gap-2"><Brain className="w-3 h-3"/> 2. 选择当前使用的模型</h4>
                             <div className="grid grid-cols-2 gap-3">
                                 <button 
                                     onClick={() => setAiProvider('gemini')}
+                                    disabled={!apiKeys.gemini}
                                     className={clsx(
                                         "py-3 rounded-xl border text-sm font-bold transition-all relative overflow-hidden", 
                                         aiProvider === 'gemini' 
                                             ? "bg-indigo-50 border-indigo-500 text-indigo-700 ring-1 ring-indigo-500" 
-                                            : "border-slate-200 text-slate-600 hover:bg-slate-50"
+                                            : "border-slate-200 text-slate-600 hover:bg-slate-50",
+                                        !apiKeys.gemini && "opacity-50 cursor-not-allowed bg-slate-100"
                                     )}
                                 >
                                     Gemini 2.5 Flash
+                                    {!apiKeys.gemini && <span className="block text-[10px] font-normal text-red-500 mt-0.5">(需输入 Key)</span>}
                                 </button>
                                 <button 
                                     onClick={() => setAiProvider('deepseek')}
@@ -474,6 +485,10 @@ const App: React.FC = () => {
                                     {!apiKeys.deepseek && <span className="block text-[10px] font-normal text-red-500 mt-0.5">(需输入 Key)</span>}
                                 </button>
                             </div>
+                            <p className="text-[10px] text-slate-400 mt-2 flex items-center gap-1">
+                                <AlertCircle className="w-3 h-3"/>
+                                只有输入了对应 Key 的模型才能被选中。
+                            </p>
                         </div>
                     </div>
 

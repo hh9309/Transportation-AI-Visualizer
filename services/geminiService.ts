@@ -22,6 +22,10 @@ export const sendMessageToAI = async (
   solverState: SolverState | null
 ): Promise<string> => {
   
+  if (!apiKey) {
+    throw new Error(`未配置 API Key。请在设置中输入您的 ${provider === 'gemini' ? 'Gemini' : 'DeepSeek'} API Key。`);
+  }
+
   // 1. Context Preparation
   let systemContext = SYSTEM_PROMPT;
   if (solverState) {
@@ -42,9 +46,6 @@ export const sendMessageToAI = async (
   try {
     // --- DEEPSEEK IMPLEMENTATION ---
     if (provider === 'deepseek') {
-      if (!apiKey) {
-        throw new Error(`未配置 DeepSeek API Key。`);
-      }
       // Convert format for OpenAI-compatible API
       // Map 'model' role to 'assistant' for OpenAI format
       const apiMessages = [
@@ -80,8 +81,7 @@ export const sendMessageToAI = async (
     
     // --- GEMINI IMPLEMENTATION ---
     else {
-      // Use process.env.API_KEY exclusively for Gemini
-      const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+      const ai = new GoogleGenAI({ apiKey });
       
       // Gemini history format
       const history = messages.slice(0, -1).map(m => ({
