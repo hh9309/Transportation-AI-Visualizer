@@ -3,7 +3,7 @@ import Tableau from './components/Tableau';
 import { ProblemState, SolverState, LogEntry } from './types';
 import { solveLeastCost, calculatePotentials, calculateOpportunityCosts, findLoop, applyPivot, generateRandomProblem, createEmptyGrid, calculateTotalCost } from './utils/solver';
 import { sendMessageToAI, AIProvider, ChatMessage } from './services/geminiService';
-import { Play, RotateCcw, Brain, CheckCircle, ArrowRight, Settings, Activity, List, Calculator, Minus, Plus, FastForward, Zap, Send, MessageSquare, X } from 'lucide-react';
+import { Play, RotateCcw, Brain, CheckCircle, ArrowRight, Settings, Activity, List, Calculator, Minus, Plus, FastForward, Zap, Send, MessageSquare, Bot, X, Key, AlertCircle } from 'lucide-react';
 import clsx from 'clsx';
 
 const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
@@ -15,7 +15,12 @@ const App: React.FC = () => {
   // --- AI Settings State ---
   const [showAiSettings, setShowAiSettings] = useState(false);
   const [aiProvider, setAiProvider] = useState<AIProvider>('gemini');
-  const [userApiKey, setUserApiKey] = useState('');
+  // Store separate keys for each provider
+  const [apiKeys, setApiKeys] = useState<{ gemini: string; deepseek: string }>({
+    gemini: '',
+    deepseek: ''
+  });
+  
   const [chatMessages, setChatMessages] = useState<ChatMessage[]>([]);
   const [userInput, setUserInput] = useState('');
   const [loadingAi, setLoadingAi] = useState(false);
@@ -190,10 +195,17 @@ const App: React.FC = () => {
     const text = customText || userInput;
     if (!text.trim()) return;
 
-    // Check Key
-    if (aiProvider === 'deepseek' && !userApiKey) {
-      setShowAiSettings(true);
-      return;
+    // VALIDATION: Check if the CURRENT provider has a key
+    const currentKey = apiKeys[aiProvider];
+    if (!currentKey) {
+        // Force open settings if key is missing
+        setShowAiSettings(true);
+        // We can add a temporary system message to chat to guide them
+        setChatMessages(prev => [...prev, { 
+            role: 'model', 
+            content: `请先在设置中配置 ${aiProvider === 'gemini' ? 'Gemini' : 'DeepSeek'} 的 API Key，然后才能使用 AI 功能。` 
+        }]);
+        return;
     }
 
     setLoadingAi(true);
@@ -203,7 +215,8 @@ const App: React.FC = () => {
     setUserInput('');
 
     try {
-      const response = await sendMessageToAI(aiProvider, userApiKey, updatedHistory, problem ? solver : null);
+      // Pass the specific key for the active provider
+      const response = await sendMessageToAI(aiProvider, currentKey, updatedHistory, problem ? solver : null);
       setChatMessages([...updatedHistory, { role: 'model', content: response }]);
     } catch (e: any) {
       setChatMessages([...updatedHistory, { role: 'model', content: `错误: ${e.message}` }]);
@@ -238,7 +251,7 @@ const App: React.FC = () => {
         {/* LEFT: Config & History */}
         <div className="col-span-12 lg:col-span-3 flex flex-col gap-4 max-h-[calc(100vh-100px)] lg:sticky lg:top-24">
            <div className="bg-white rounded-2xl p-5 shadow-sm border border-slate-200">
-              <h2 className="text-sm font-bold text-slate-400 uppercase tracking-wider mb-4 flex items-center gap-2"><Settings className="w-4 h-4" /> 问题配置</h2>
+              <h2 className="text-sm font-bold text-slate-400 uppercase tracking-wider mb-4 flex items-center gap-2"><List className="w-4 h-4" /> 问题配置</h2>
               {!problem ? (
                 <div className="space-y-4">
                   <div className="grid grid-cols-2 gap-4">
@@ -334,7 +347,13 @@ const App: React.FC = () => {
                         </div>
                     </div>
                  </div>
-                 <button onClick={() => setShowAiSettings(true)} className="p-2 hover:bg-white/10 rounded-lg transition-colors"><Settings className="w-4 h-4 text-slate-400"/></button>
+                 <button 
+                    onClick={() => setShowAiSettings(true)} 
+                    className="p-2 hover:bg-white/10 rounded-lg transition-colors"
+                    title="AI 设置"
+                 >
+                    <Settings className="w-4 h-4 text-slate-400"/>
+                 </button>
               </div>
 
               {/* Chat History */}
@@ -342,23 +361,27 @@ const App: React.FC = () => {
                   {chatMessages.length === 0 && (
                       <div className="text-center py-10 opacity-50">
                           <MessageSquare className="w-10 h-10 mx-auto mb-2 text-slate-300" />
-                          <p className="text-xs text-slate-500">你可以询问“解释当前步骤”或输入任何运筹学相关问题。</p>
+                          <p className="text-xs text-slate-500">
+                             请先在右上角 <Settings className="w-3 h-3 inline"/> 配置 API Key。
+                             <br/>
+                             你可以询问“解释当前步骤”或输入任何运筹学相关问题。
+                          </p>
                       </div>
                   )}
                   {chatMessages.map((msg, idx) => (
                       <div key={idx} className={clsx("flex gap-2 max-w-[90%]", msg.role === 'user' ? "ml-auto flex-row-reverse" : "")}>
-                          <div className={clsx("w-6 h-6 rounded-full flex items-center justify-center shrink-0 text-[10px] font-bold", msg.role === 'user' ? "bg-indigo-100 text-indigo-600" : "bg-slate-800 text-white")}>
-                              {msg.role === 'user' ? 'U' : 'AI'}
+                          <div className={clsx("w-6 h-6 rounded-full flex items-center justify-center shrink-0 text-[10px] font-bold shadow-sm", msg.role === 'user' ? "bg-indigo-600 text-white" : "bg-white text-slate-700 border border-slate-200")}>
+                              {msg.role === 'user' ? 'U' : <Bot className="w-3.5 h-3.5"/>}
                           </div>
-                          <div className={clsx("p-2.5 rounded-2xl text-sm leading-relaxed shadow-sm", msg.role === 'user' ? "bg-indigo-600 text-white rounded-tr-none" : "bg-white border border-slate-200 text-slate-700 rounded-tl-none")}>
+                          <div className={clsx("p-3 rounded-2xl text-sm leading-relaxed shadow-sm", msg.role === 'user' ? "bg-indigo-600 text-white rounded-tr-none" : "bg-white border border-slate-200 text-slate-700 rounded-tl-none")}>
                               {msg.content}
                           </div>
                       </div>
                   ))}
                   {loadingAi && (
                       <div className="flex gap-2">
-                          <div className="w-6 h-6 rounded-full bg-slate-800 flex items-center justify-center shrink-0"><Activity className="w-3 h-3 text-white animate-spin"/></div>
-                          <div className="bg-white p-2.5 rounded-2xl rounded-tl-none border border-slate-200 text-sm text-slate-400">正在思考...</div>
+                          <div className="w-6 h-6 rounded-full bg-white border border-slate-200 flex items-center justify-center shrink-0"><Activity className="w-3 h-3 text-indigo-500 animate-spin"/></div>
+                          <div className="bg-white p-3 rounded-2xl rounded-tl-none border border-slate-200 text-sm text-slate-400">正在思考...</div>
                       </div>
                   )}
                   <div ref={chatEndRef} />
@@ -395,51 +418,86 @@ const App: React.FC = () => {
         {/* AI Settings Modal */}
         {showAiSettings && (
             <div className="fixed inset-0 bg-black/40 backdrop-blur-sm z-50 flex items-center justify-center animate-in fade-in duration-200">
-                <div className="bg-white rounded-2xl shadow-2xl p-6 w-[400px] transform transition-all scale-100">
+                <div className="bg-white rounded-2xl shadow-2xl p-6 w-[450px] transform transition-all scale-100 border border-slate-100">
                     <div className="flex justify-between items-center mb-6">
-                        <h3 className="text-lg font-bold text-slate-800 flex items-center gap-2"><Brain className="w-5 h-5 text-indigo-600"/> AI 配置</h3>
+                        <h3 className="text-lg font-bold text-slate-800 flex items-center gap-2"><Settings className="w-5 h-5 text-indigo-600"/> AI 模型配置</h3>
                         <button onClick={() => setShowAiSettings(false)} className="text-slate-400 hover:text-slate-600"><X className="w-5 h-5"/></button>
                     </div>
 
-                    <div className="space-y-5">
-                        <div>
-                            <label className="block text-xs font-bold text-slate-500 uppercase mb-2">选择模型提供商</label>
-                            <div className="grid grid-cols-2 gap-3">
-                                <button 
-                                    onClick={() => setAiProvider('gemini')}
-                                    className={clsx("py-3 rounded-xl border text-sm font-bold transition-all", aiProvider === 'gemini' ? "bg-indigo-50 border-indigo-500 text-indigo-700 ring-1 ring-indigo-500" : "border-slate-200 hover:bg-slate-50 text-slate-600")}
-                                >
-                                    Gemini 2.5
-                                </button>
-                                <button 
-                                    onClick={() => setAiProvider('deepseek')}
-                                    className={clsx("py-3 rounded-xl border text-sm font-bold transition-all", aiProvider === 'deepseek' ? "bg-indigo-50 border-indigo-500 text-indigo-700 ring-1 ring-indigo-500" : "border-slate-200 hover:bg-slate-50 text-slate-600")}
-                                >
-                                    DeepSeek V3
-                                </button>
+                    <div className="space-y-6">
+                        {/* API Keys Section - ALWAYS VISIBLE */}
+                        <div className="p-4 bg-slate-50 rounded-xl border border-slate-200 space-y-4">
+                            <h4 className="text-xs font-bold text-slate-500 uppercase flex items-center gap-2"><Key className="w-3 h-3"/> 1. 输入 API Key (必填)</h4>
+                            
+                            <div>
+                                <label className="block text-xs font-medium text-slate-600 mb-1.5">Gemini API Key</label>
+                                <input 
+                                    type="password" 
+                                    value={apiKeys.gemini}
+                                    onChange={(e) => setApiKeys(prev => ({...prev, gemini: e.target.value}))}
+                                    placeholder="AIzaSy..."
+                                    className="w-full p-2.5 bg-white border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 outline-none font-mono"
+                                />
+                            </div>
+
+                            <div>
+                                <label className="block text-xs font-medium text-slate-600 mb-1.5">DeepSeek API Key</label>
+                                <input 
+                                    type="password" 
+                                    value={apiKeys.deepseek}
+                                    onChange={(e) => setApiKeys(prev => ({...prev, deepseek: e.target.value}))}
+                                    placeholder="sk-..."
+                                    className="w-full p-2.5 bg-white border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 outline-none font-mono"
+                                />
                             </div>
                         </div>
 
+                        {/* Model Selection Section */}
                         <div>
-                            <label className="block text-xs font-bold text-slate-500 uppercase mb-2">API Key <span className="text-red-500">*</span></label>
-                            <input 
-                                type="password" 
-                                value={userApiKey}
-                                onChange={(e) => setUserApiKey(e.target.value)}
-                                placeholder={aiProvider === 'gemini' ? "AIzaSy... (留空尝试使用默认)" : "sk-..."}
-                                className="w-full p-3 border border-slate-300 rounded-xl text-sm focus:ring-2 focus:ring-indigo-500 outline-none font-mono"
-                            />
-                            <p className="text-[10px] text-slate-400 mt-2">
-                                {aiProvider === 'gemini' 
-                                    ? "Gemini 可留空以使用系统预设 Key（如果已配置环境）。" 
-                                    : "DeepSeek 必须输入您的 API Key 才能使用。"}
+                            <h4 className="text-xs font-bold text-slate-500 uppercase mb-3 flex items-center gap-2"><Brain className="w-3 h-3"/> 2. 选择当前使用的模型</h4>
+                            <div className="grid grid-cols-2 gap-3">
+                                <button 
+                                    onClick={() => setAiProvider('gemini')}
+                                    disabled={!apiKeys.gemini}
+                                    className={clsx(
+                                        "py-3 rounded-xl border text-sm font-bold transition-all relative overflow-hidden", 
+                                        aiProvider === 'gemini' 
+                                            ? "bg-indigo-50 border-indigo-500 text-indigo-700 ring-1 ring-indigo-500" 
+                                            : "border-slate-200 text-slate-600 hover:bg-slate-50",
+                                        !apiKeys.gemini && "opacity-50 cursor-not-allowed bg-slate-100"
+                                    )}
+                                >
+                                    Gemini 2.5 Flash
+                                    {!apiKeys.gemini && <span className="block text-[10px] font-normal text-red-500 mt-0.5">(需输入 Key)</span>}
+                                </button>
+                                <button 
+                                    onClick={() => setAiProvider('deepseek')}
+                                    disabled={!apiKeys.deepseek}
+                                    className={clsx(
+                                        "py-3 rounded-xl border text-sm font-bold transition-all relative overflow-hidden", 
+                                        aiProvider === 'deepseek' 
+                                            ? "bg-indigo-50 border-indigo-500 text-indigo-700 ring-1 ring-indigo-500" 
+                                            : "border-slate-200 text-slate-600 hover:bg-slate-50",
+                                        !apiKeys.deepseek && "opacity-50 cursor-not-allowed bg-slate-100"
+                                    )}
+                                >
+                                    DeepSeek V3
+                                    {!apiKeys.deepseek && <span className="block text-[10px] font-normal text-red-500 mt-0.5">(需输入 Key)</span>}
+                                </button>
+                            </div>
+                            <p className="text-[10px] text-slate-400 mt-2 flex items-center gap-1">
+                                <AlertCircle className="w-3 h-3"/>
+                                只有输入了对应 Key 的模型才能被选中。
                             </p>
                         </div>
                     </div>
 
                     <div className="mt-8 flex justify-end">
-                        <button onClick={() => setShowAiSettings(false)} className="px-6 py-2.5 bg-slate-900 text-white rounded-xl font-bold hover:bg-slate-800 transition-colors">
-                            保存并关闭
+                        <button 
+                            onClick={() => setShowAiSettings(false)} 
+                            className="px-6 py-2.5 bg-slate-900 text-white rounded-xl font-bold hover:bg-slate-800 transition-colors"
+                        >
+                            完成设置
                         </button>
                     </div>
                 </div>

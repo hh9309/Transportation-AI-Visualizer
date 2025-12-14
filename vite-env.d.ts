@@ -1,8 +1,2 @@
-/// <reference types="vite/client" />
-
-declare namespace NodeJS {
-  interface ProcessEnv {
-    API_KEY: string;
-    [key: string]: string | undefined;
-  }
-}
+// /// <reference types="vite/client" />
+// Note: Type definitions for vite/client are not available in this environment.
