@@ -1,2 +1,6 @@
-// /// <reference types="vite/client" />
-// Note: Type definitions for vite/client are not available in this environment.
+declare const process: {
+  env: {
+    [key: string]: string | undefined;
+    API_KEY: string;
+  }
+}
